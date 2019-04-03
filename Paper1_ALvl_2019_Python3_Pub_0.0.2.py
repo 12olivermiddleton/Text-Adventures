@@ -581,8 +581,14 @@ def PlayGame(Characters, Items, Places):
         elif Command == "playdice":
             Items = PlayDiceGame(Characters, Items, Instruction)
         elif Command == "quit":
-            Say("You decide to give up, try again another time.")
-            StopGame = True
+        # start of confirm quit
+            confirm_quit = input("are you sure you want to quit this game (y/n): ").lower()
+            if confirm_quit == "y":
+                Say("You decide to give up, try again another time.")
+                StopGame = True
+            else:
+                print("Ypu decided to continue the game...")
+        # end of confirm quit
         else:
             print("Sorry, you don't know how to " + Command + ".")
     input()
