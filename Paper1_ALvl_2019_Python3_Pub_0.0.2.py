@@ -566,6 +566,13 @@ def PlayGame(Characters, Items, Places):
             ReadItem(Items, Instruction, Characters[0].CurrentLocation)
         elif Command == "examine":
             Examine(Items, Characters, Instruction, Characters[0].CurrentLocation)
+        # start of help command
+        elif Command == "help":
+            commands = ["get", "use", "go", "read", "examine", "help", "open", "close", "move", "say", "playdice", "quit"]
+            print("The commands are: ")
+            for i in commands:
+                print(i)
+        # end opf help function
         elif Command == "open":
             ResultOfOpenClose, Items, Places = OpenClose(True, Items, Places, Instruction,
                                                          Characters[0].CurrentLocation)
