@@ -110,10 +110,13 @@ def DisplayContentsOfContainerItem(Items, ContainerID):
         print("nothing.")
 
 
-def Examine(Items, Characters, ItemToExamine, CurrentLocation):
+def Examine(Items, Characters, ItemToExamine, CurrentLocation, Places):
     Count = 0
     if ItemToExamine == "inventory":
         DisplayInventory(Items)
+    elif ItemToExamine == "room":
+        print(Places[Characters[0].CurrentLocation - 1].Description)
+        DisplayGettableItemsInLocation(Items,CurrentLocation)
     else:
         IndexOfItem = GetIndexOfItem(ItemToExamine, -1, Items)
         if IndexOfItem != -1:
@@ -251,6 +254,7 @@ def GetIndexOfItem(ItemNameToGet, ItemIDToGet, Items):
     StopLoop = False
     while not StopLoop and Count < len(Items):
         if (ItemIDToGet == -1 and Items[Count].Name == ItemNameToGet) or Items[Count].ID == ItemIDToGet:
+        # provides 2 ways of getting an item id, one where we know the name and not the id, and one where we know the id
             StopLoop = True
         else:
             Count += 1
@@ -542,7 +546,11 @@ def DisplayOpenCloseMessage(ResultOfOpenClose, OpenCommand):
         Say("It already is.")
     elif ResultOfOpenClose == -1:
         Say("You can't open that.")
-
+# adding in teleport player
+def Teleport(You, Location):
+    You.CurrentLocation = int(Location)
+    return You, True
+# end of adding in teleport player
 
 def PlayGame(Characters, Items, Places):
     StopGame = False
@@ -565,7 +573,7 @@ def PlayGame(Characters, Items, Places):
         elif Command == "read":
             ReadItem(Items, Instruction, Characters[0].CurrentLocation)
         elif Command == "examine":
-            Examine(Items, Characters, Instruction, Characters[0].CurrentLocation)
+            Examine(Items, Characters, Instruction, Characters[0].CurrentLocation, Places)
         elif Command == "open":
             ResultOfOpenClose, Items, Places = OpenClose(True, Items, Places, Instruction,
                                                          Characters[0].CurrentLocation)
@@ -576,6 +584,10 @@ def PlayGame(Characters, Items, Places):
             DisplayOpenCloseMessage(ResultOfOpenClose, False)
         elif Command == "move":
             MoveItem(Items, Instruction, Characters[0].CurrentLocation)
+        # addint in the teleport command option
+        elif Command == "teleport":
+           Characters[0],Moved =  Teleport(Characters[0], Instruction)
+        # end of teleport location section
         elif Command == "say":
             Say(Instruction)
         elif Command == "playdice":
