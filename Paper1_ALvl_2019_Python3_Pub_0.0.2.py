@@ -11,6 +11,7 @@ import struct
 INVENTORY = 1001
 MINIMUM_ID_FOR_ITEM = 2001
 ID_DIFFERENCE_FOR_OBJECT_IN_TWO_LOCATIONS = 10000
+MAX_INVENTORY = 4
 
 
 class Place():
@@ -36,6 +37,26 @@ def GetInstruction():
     Instruction = input("> ").lower()
     return Instruction
 
+class History():
+    def __init__(self):
+        self.LocationStack = []
+        self.TopOfStack = -1
+
+    def Push(self, NewLocation):
+        # if self.Pointer == 5:
+        #     self.LocationStack.pop(0)
+        self.LocationStack.append(NewLocation)
+        self.TopOfStack += 1
+
+    def Pop(self):
+        if self.TopOfStack == -1:
+            return -1
+        else:
+            LastLocation = self.LocationStack.pop(self.TopOfStack)
+            self.TopOfStack += -1
+
+            return LastLocation
+
 
 def ExtractCommand(Instruction):
     Command = ""
@@ -49,7 +70,7 @@ def ExtractCommand(Instruction):
     return Command, Instruction
 
 
-def Go(You, Direction, CurrentPlace):
+def Go(You, Direction, CurrentPlace, HistoryLocation):
     Moved = True
     if Direction == "north":
         if CurrentPlace.North == 0:
@@ -60,6 +81,7 @@ def Go(You, Direction, CurrentPlace):
         if CurrentPlace.East == 0:
             Moved = False
         else:
+            HistoryLocation.Push(You.CurrentLocation)
             You.CurrentLocation = CurrentPlace.East
     elif Direction == "south":
         if CurrentPlace.South == 0:
@@ -81,6 +103,13 @@ def Go(You, Direction, CurrentPlace):
             Moved = False
         else:
             You.CurrentLocation = CurrentPlace.Down
+
+    elif Direction == "back":
+        pointer = HistoryLocation.Pop()
+        if pointer == -1:
+            print("You cannot go back")
+        else:
+            You.CurrentLocation = pointer
     else:
         Moved = False
     if not Moved:
@@ -358,6 +387,12 @@ def ReadItem(Items, ItemToRead, CurrentLocation):
         if SubCommand == "say":
             Say(SubCommandParameter)
 
+def CheckSpaceInInventory(Items):
+    numberOfItems = 0
+    for item in Items:
+        if item.Location == INVENTORY:
+            numberOfItems = numberOfItems + 1
+    return MAX_INVENTORY - numberOfItems
 
 def GetItem(Items, ItemToGet, CurrentLocation):
     SubCommand = ""
@@ -381,17 +416,21 @@ def GetItem(Items, ItemToGet, CurrentLocation):
         print("You can't find " + ItemToGet + ".")
         CanGet = False
     if CanGet:
-        Position = GetPositionOfCommand(Items[IndexOfItem].Commands, "get")
-        ResultForCommand = GetResultForCommand(Items[IndexOfItem].Results, Position)
-        SubCommand, SubCommandParameter = ExtractResultForCommand(SubCommand, SubCommandParameter, ResultForCommand)
-        if SubCommand == "say":
-            Say(SubCommandParameter)
-        elif SubCommand == "win":
-            Say("You have won the game")
-            return True, Items
-        if "gettable" in Items[IndexOfItem].Status:
-            Items = ChangeLocationOfItem(Items, IndexOfItem, INVENTORY)
-            print("You have got that now.")
+        if CheckSpaceInInventory(Items) == 0:
+            print("Sorry your inventory is full")
+            CanGet = False
+        else:
+            Position = GetPositionOfCommand(Items[IndexOfItem].Commands, "get")
+            ResultForCommand = GetResultForCommand(Items[IndexOfItem].Results, Position)
+            SubCommand, SubCommandParameter = ExtractResultForCommand(SubCommand, SubCommandParameter, ResultForCommand)
+            if SubCommand == "say":
+                Say(SubCommandParameter)
+            elif SubCommand == "win":
+                Say("You have won the game")
+                return True, Items
+            if "gettable" in Items[IndexOfItem].Status:
+                Items = ChangeLocationOfItem(Items, IndexOfItem, INVENTORY)
+                print("You have got that now.")
     return False, Items
 
 
@@ -547,6 +586,7 @@ def DisplayOpenCloseMessage(ResultOfOpenClose, OpenCommand):
 def PlayGame(Characters, Items, Places):
     StopGame = False
     Moved = True
+    HistoryLocation = History()
     while not StopGame:
         if Moved:
             print()
@@ -555,13 +595,15 @@ def PlayGame(Characters, Items, Places):
             DisplayGettableItemsInLocation(Items, Characters[0].CurrentLocation)
             Moved = False
         Instruction = GetInstruction()
+
         Command, Instruction = ExtractCommand(Instruction)
         if Command == "get":
             StopGame, Items = GetItem(Items, Instruction, Characters[0].CurrentLocation)
         elif Command == "use":
             StopGame, Items = UseItem(Items, Instruction, Characters[0].CurrentLocation, Places)
         elif Command == "go":
-            Characters[0], Moved = Go(Characters[0], Instruction, Places[Characters[0].CurrentLocation - 1])
+
+            Characters[0], Moved = Go(Characters[0], Instruction, Places[Characters[0].CurrentLocation - 1], HistoryLocation)
         elif Command == "read":
             ReadItem(Items, Instruction, Characters[0].CurrentLocation)
         elif Command == "examine":
